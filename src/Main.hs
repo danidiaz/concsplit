@@ -52,12 +52,11 @@ parseSize =
         kiloMult = T.pack "K"
         megaMult = T.pack "M" 
         gigaMult = T.pack "G" 
-        parseMultiplier :: T.Text -> Either String Int
-        parseMultiplier sizeDesc 
-            | T.null sizeDesc = return 1
-            | sizeDesc == kiloMult = return 1024
-            | sizeDesc == megaMult = return (1024*1024)
-            | sizeDesc == gigaMult = return (1024*1024*1024)
+        parseMultiplier mult 
+            | T.null mult = pure 1
+            | mult == kiloMult = pure 1024
+            | mult == megaMult = pure (1024*1024)
+            | mult == gigaMult = pure (1024*1024*1024)
             | otherwise = throwError "Unknown size multiplier"
         postp (parsed,rest) = (*) parsed <$> parseMultiplier rest 
     in parseIntPrefix postp

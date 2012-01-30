@@ -37,18 +37,17 @@ defaultOptions = Options [] 1024 0 "part." [1024] False
 changeErr:: String -> Either String a -> Either String a 
 changeErr msg x = catchError x (\s2 -> throwError $ msg ++ s2)
 
-parseIntWithUnits:: ((Int,T.Text) -> Either String Int) -> String -> Either String Int
-parseIntWithUnits post s =
-    let changeErr x = catchError x (\s2 -> throwError $ ("While parsing " ++ s ++ ": " ++ s2))
-    in changeErr $ (decimal (T.pack s) >>= post)
-
+parseIntPrefix:: ((Int,T.Text) -> Either String Int) -> String -> Either String Int
+parseIntPrefix post s =
+    let changeErr x = catchError x (\s2 -> throwError $ "While parsing " ++ s ++ ": " ++ s2)
+    in changeErr $ decimal (T.pack s) >>= post
 
 parseInt:: String -> Either String Int
 parseInt = 
     let nothingLeft (num,rest)
             |T.null rest = return num
             |otherwise = throwError $ "There are characters after " ++ (show num)
-    in parseIntWithUnits nothingLeft
+    in parseIntPrefix nothingLeft
 
 parseSize:: String -> Either String Int
 parseSize = 
@@ -64,7 +63,7 @@ parseSize =
             | sizeDesc == gigaMult = return (1024*1024*1024)
             | otherwise = throwError "Unknown size multiplier"
         parseUnits (parsed,rest) = (*) parsed <$> parseMultiplier rest 
-    in parseIntWithUnits parseUnits
+    in parseIntPrefix parseUnits
 
 options :: [OptDescr (Options -> Either String Options)]
 options = [
@@ -88,7 +87,8 @@ parseMandatory list opts
             (x:sizeList@(s:xs)) ->
                 let opts2 = setL partPrefix x opts
                 in (\l -> setL partSizes l opts2) <$> mapM parseSize sizeList
-            _ -> throwError "You need to provide a prefix for the result file, and at least one size!"
+            _ -> throwError $ "You need to provide a prefix for the result file," ++ 
+                              " and at least one part size!"
 
 printUsage::IO ()
 printUsage =
@@ -104,7 +104,7 @@ main = do
             |null errors = pure ()
             |otherwise = throwError $ head errors 
         optsz = foldM (flip ($)) defaultOptions optsEither
-        mandatory = (errorsAsEither *> optsz) >>= parseMandatory nonopts 
+        mandatory = errorsAsEither *> optsz >>= parseMandatory nonopts 
     case mandatory of
         Left errmsg -> putStrLn errmsg
         Right opts ->

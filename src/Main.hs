@@ -34,24 +34,37 @@ $( makeLenses [''Options] )
 defaultOptions:: Options
 defaultOptions = Options [] 1024 0 "part." [1024] False
 
+changeErr:: String -> Either String a -> Either String a 
+changeErr msg x = catchError x (\s2 -> throwError $ msg ++ s2)
+
+parseIntWithUnits:: ((Int,T.Text) -> Either String Int) -> String -> Either String Int
+parseIntWithUnits post s =
+    let changeErr x = catchError x (\s2 -> throwError $ ("While parsing " ++ s ++ ": " ++ s2))
+    in changeErr $ (decimal (T.pack s) >>= post)
+
+
 parseInt:: String -> Either String Int
-parseInt s = decimal (T.pack s) >>= nothingLeft where
-        nothingLeft (num,rest)
+parseInt = 
+    let nothingLeft (num,rest)
             |T.null rest = return num
             |otherwise = throwError $ "There are characters after " ++ (show num)
+    in parseIntWithUnits nothingLeft
 
 parseSize:: String -> Either String Int
-parseSize s = 
+parseSize = 
     let
         kiloMult = T.pack "K"
         megaMult = T.pack "M" 
+        gigaMult = T.pack "G" 
         parseMultiplier :: T.Text -> Either String Int
         parseMultiplier sizeDesc 
             | T.null sizeDesc = return 1
             | sizeDesc == kiloMult = return 1024
             | sizeDesc == megaMult = return (1024*1024)
+            | sizeDesc == gigaMult = return (1024*1024*1024)
             | otherwise = throwError "Unknown size multiplier"
-    in (decimal $ T.pack s) >>= \(parsed,rest) -> (*) parsed <$> parseMultiplier rest 
+        parseUnits (parsed,rest) = (*) parsed <$> parseMultiplier rest 
+    in parseIntWithUnits parseUnits
 
 options :: [OptDescr (Options -> Either String Options)]
 options = [
@@ -61,7 +74,7 @@ options = [
         let update f opts = (\n -> setL chunkSize n opts) <$> parseSize f
         in Option ['c'] ["chunkSize"] (ReqArg update "bytes") "Chunk size in bytes",
 
-        let update f opts = (\n -> setL exitSecDelay n opts) <$> parseSize f
+        let update f opts = (\n -> setL exitSecDelay n opts) <$> parseInt f
         in Option ['d'] ["delay"] (ReqArg update "seconds") "Delay in seconds before exiting",
 
         let update = \opts -> pure $ setL helpRequired True opts 

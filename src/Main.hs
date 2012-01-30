@@ -19,7 +19,7 @@ import qualified Control.Exception as CE
 import qualified Data.Text as T
 import Data.Text.Read
 
-data Options = Options
+data Conf = Conf
     {
         _filesToJoin :: [FilePath], -- empty list means we read from standard input
         _chunkSize :: Int,
@@ -29,25 +29,22 @@ data Options = Options
         _helpRequired :: Bool
     } deriving Show
 
-$( makeLenses [''Options] )
+$( makeLenses [''Conf] )
 
-defaultOptions:: Options
-defaultOptions = Options [] 1024 0 "part." [1024] False
-
-changeErr:: String -> Either String a -> Either String a 
-changeErr msg x = catchError x (\s2 -> throwError $ msg ++ s2)
+defaultConf:: Conf
+defaultConf = Conf [] 1024 0 "part." [1024] False
 
 parseIntPrefix:: ((Int,T.Text) -> Either String Int) -> String -> Either String Int
-parseIntPrefix post s =
-    let changeErr x = catchError x (\s2 -> throwError $ "While parsing " ++ s ++ ": " ++ s2)
-    in changeErr $ decimal (T.pack s) >>= post
+parseIntPrefix postp s =
+    let errCtx = flip catchError (\e -> throwError $ "While parsing " ++ s ++ ": " ++ e)
+    in errCtx $ postp =<< decimal (T.pack s)
 
 parseInt:: String -> Either String Int
 parseInt = 
-    let nothingLeft (num,rest)
+    let postp (num,rest)
             |T.null rest = return num
-            |otherwise = throwError $ "There are characters after " ++ (show num)
-    in parseIntPrefix nothingLeft
+            |otherwise = throwError $ "Unexpected characters after " ++ (show num)
+    in parseIntPrefix postp
 
 parseSize:: String -> Either String Int
 parseSize = 
@@ -62,31 +59,31 @@ parseSize =
             | sizeDesc == megaMult = return (1024*1024)
             | sizeDesc == gigaMult = return (1024*1024*1024)
             | otherwise = throwError "Unknown size multiplier"
-        parseUnits (parsed,rest) = (*) parsed <$> parseMultiplier rest 
-    in parseIntPrefix parseUnits
+        postp (parsed,rest) = (*) parsed <$> parseMultiplier rest 
+    in parseIntPrefix postp
 
-options :: [OptDescr (Options -> Either String Options)]
+options:: [OptDescr (Conf -> Either String Conf)]
 options = [
-        let update = \f opts -> pure $ modL filesToJoin  ((:) f) opts 
+        let update = \file conf -> pure $ modL filesToJoin  ((:) file) conf 
         in Option ['f'] ["file"] (ReqArg update "filename") "Input file name",
 
-        let update f opts = (\n -> setL chunkSize n opts) <$> parseSize f
+        let update c conf = flip (setL chunkSize) conf <$> parseSize c
         in Option ['c'] ["chunkSize"] (ReqArg update "bytes") "Chunk size in bytes",
 
-        let update f opts = (\n -> setL exitSecDelay n opts) <$> parseInt f
+        let update d conf = flip (setL exitSecDelay) conf <$> parseInt d
         in Option ['d'] ["delay"] (ReqArg update "seconds") "Delay in seconds before exiting",
 
-        let update = \opts -> pure $ setL helpRequired True opts 
+        let update = \conf -> pure $ setL helpRequired True conf 
         in Option ['h'] ["help"] (NoArg update) "Show this help"
     ]
 
-parseMandatory:: [String] -> Options -> Either String Options 
-parseMandatory list opts
-    | getL helpRequired opts = pure opts
+parseNonOpts:: [String] -> Conf -> Either String Conf 
+parseNonOpts list conf
+    | getL helpRequired conf = pure conf
     | otherwise = case list of 
-            (x:sizeList@(s:xs)) ->
-                let opts2 = setL partPrefix x opts
-                in (\l -> setL partSizes l opts2) <$> mapM parseSize sizeList
+            (prefix:sizeList@(s:_)) ->
+                let conf' = setL partPrefix prefix conf
+                in flip (setL partSizes) conf' <$> mapM parseSize sizeList
             _ -> throwError $ "You need to provide a prefix for the result file," ++ 
                               " and at least one part size!"
 
@@ -99,18 +96,18 @@ main :: IO ()
 main = do 
     args <- getArgs
     let 
-        (optsEither,nonopts,errors) = getOpt Permute options args
-        errorsAsEither 
+        (conftrans,nonopts,errors) = getOpt Permute options args
+        errE 
             |null errors = pure ()
             |otherwise = throwError $ head errors 
-        optsz = foldM (flip ($)) defaultOptions optsEither
-        mandatory = errorsAsEither *> optsz >>= parseMandatory nonopts 
-    case mandatory of
+        confE = foldM (flip ($)) defaultConf conftrans
+        confE' = errE *> confE >>= parseNonOpts nonopts 
+    case confE' of
         Left errmsg -> putStrLn errmsg
-        Right opts ->
-            if (getL helpRequired opts)
+        Right conf ->
+            if (getL helpRequired conf)
             then  
                 printUsage
             else 
-                putStrLn $ show opts
+                putStrLn $ show conf
 

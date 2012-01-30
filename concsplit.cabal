@@ -1,0 +1,27 @@
+cabal-version: >= 1.10
+name:          concsplit
+version:       0.1
+license:       MIT
+license-file:  LICENSE
+data-files:    
+author:        Daniel Díaz Carrete
+maintainer:    
+category:      System
+build-type:    Simple
+
+executable concsplit
+  main-is:        Main.hs
+  hs-source-dirs: src
+  other-modules: 
+  build-depends:         
+        base >= 4.4,    
+        List >= 0.4.2, 
+        conduit >= 0.1.1.1,
+        iteratee >= 0.8.8.1,
+        data-lens >= 2.0.2,
+        data-lens-template >= 2.1.3,
+        template-haskell >= 2.6.0.0,
+        text >= 0.11.1.12,
+        mtl >= 2.0.1.0
+  default-language: Haskell2010
+ 

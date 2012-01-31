@@ -19,6 +19,9 @@ import qualified Control.Exception as CE
 import qualified Data.Text as T
 import Data.Text.Read
 
+import ConcSplit
+import qualified ConcSplit.Leaky as LEAKY
+
 data Conf = Conf
     {
         _filesToJoin :: [FilePath], -- empty list means we read from standard input
@@ -26,13 +29,15 @@ data Conf = Conf
         _exitSecDelay :: Int,
         _partPrefix :: FilePath,
         _partSizes :: [Int],
-        _helpRequired :: Bool
-    } deriving Show
+        _helpRequired :: Bool,
+        _concSplitFiles :: Int -> [FilePath] -> [(FilePath,Int)] -> IO (),
+        _splitHandle :: Int -> Handle -> [(FilePath,Int)] -> IO ()
+    } 
 
 $( makeLenses [''Conf] )
 
 defaultConf:: Conf
-defaultConf = Conf [] 1024 0 "part." [1024] False
+defaultConf = Conf [] 1024 0 "part." [1024] False LEAKY.concSplitFiles LEAKY.splitHandle
 
 parseIntPrefix:: ((Int,T.Text) -> Either String Int) -> String -> Either String Int
 parseIntPrefix postp s =
@@ -55,8 +60,8 @@ parseSize =
         parseMultiplier mult 
             | T.null mult = pure 1
             | mult == kiloMult = pure 1024
-            | mult == megaMult = pure (1024*1024)
-            | mult == gigaMult = pure (1024*1024*1024)
+            | mult == megaMult = pure (1024^2)
+            | mult == gigaMult = pure (1024^3)
             | otherwise = throwError "Unknown size multiplier"
         postp (parsed,rest) = (*) parsed <$> parseMultiplier rest 
     in parseIntPrefix postp
@@ -78,7 +83,8 @@ options = [
 
 parseNonOpts:: [String] -> Conf -> Either String Conf 
 parseNonOpts list conf
-    | getL helpRequired conf = pure conf
+      -- if help is requested we don't bother with nonopts
+    | getL helpRequired conf = pure conf 
     | otherwise = case list of 
             (prefix:sizeList@(s:_)) ->
                 let conf' = setL partPrefix prefix conf
@@ -107,6 +113,7 @@ main = do
             if (getL helpRequired conf)
             then  
                 printUsage
-            else 
-                putStrLn $ show conf
+            else do 
+                putStrLn $ "foo!"
+                threadDelay $ (getL exitSecDelay conf)*(1000^2)
 

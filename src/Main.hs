@@ -8,6 +8,7 @@ import System.IO.Error
 import System.Environment
 import System.Console.GetOpt
 import Data.Char
+import qualified Data.Map as M
 import Data.List
 import Data.Lens.Common
 import Data.Lens.Template
@@ -21,7 +22,7 @@ import qualified Control.Exception as CE
 import qualified Data.Text as T
 import Data.Text.Read
 
-import ConcSplit
+import qualified ConcSplit as CS
 import qualified ConcSplit.Leaky as LEAKY
 
 data Conf = Conf
@@ -31,7 +32,7 @@ data Conf = Conf
         _exitSecDelay :: Int,
         _partPrefix :: FilePath,
         _partSizes :: [Int],
-        _impl :: Impl,
+        _impl :: CS.Impl,
         _helpRequired :: Bool
     } deriving Show
 
@@ -39,6 +40,14 @@ $( makeLenses [''Conf] )
 
 instance Default Conf where
     def = Conf [] 1024 0 "part." [1024] LEAKY.impl False
+
+implMap:: M.Map String CS.Impl
+implMap = 
+    let addImpl:: CS.Impl -> M.Map String CS.Impl -> M.Map String CS.Impl
+        addImpl map impl =
+            let names = getL CS.names impl
+            in foldl' (\m n -> insert n impl m) map names 
+    in fold' addImpl M.empty [LEAKY.impl]  
 
 parseIntPrefix:: ((Int,T.Text) -> Either String Int) -> String -> Either String Int
 parseIntPrefix postp s =

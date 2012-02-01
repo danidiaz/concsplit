@@ -5,7 +5,7 @@ module ConcSplit.Leaky (
     ) where 
 
 import System.IO
-import ConcSplit as CS
+import qualified ConcSplit as CS
 
 impl:: CS.Impl
 impl= CS.Impl ["leaky","vanilla"] concSplitFiles splitHandle 

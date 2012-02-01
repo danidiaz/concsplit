@@ -1,7 +1,8 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module ConcSplit (
-       Impl (..)
+       Impl (..),
+       names, concSplitFiles, splitHandle
     ) where
 
 import System.IO hiding (hGetContents,getContents,readFile,interact)

@@ -21,13 +21,13 @@ data Impl = Impl
 $( makeLenses [''Impl] )
 
 instance Show Impl where
-    show impl = "ConcSplit impl with names " ++  (show $ getL names impl)
+    show impl = "ConcSplit impl " ++  (show $ getL names impl)
 
 
 infiniteParts:: FilePath -> [Int] -> [(FilePath,Int)]
 infiniteParts prefix sizes =
     let reversed = reverse sizes
-        (last, allbutlast) = (head reversed, reverse $ tail reversed)
+        (allbutlast,last) = (head reversed, reverse $ tail reversed)
         infiniteSizes = allbutlast ++ repeat last
 
         infiniteNames = map (\n -> prefix ++ show n) [1..]

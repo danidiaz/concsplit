@@ -26,10 +26,7 @@ instance Show Impl where
 
 infiniteParts:: FilePath -> [Int] -> [(FilePath,Int)]
 infiniteParts prefix sizes =
-    let reversed = reverse sizes
-        (allbutlast,last) = (head reversed, reverse $ tail reversed)
-        infiniteSizes = allbutlast ++ repeat last
-
+    let infiniteSizes = init sizes ++ (repeat $ last sizes)
         infiniteNames = map (\n -> prefix ++ show n) [1..]
     in zip infiniteNames infiniteSizes 
         

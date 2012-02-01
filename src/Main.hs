@@ -33,13 +33,14 @@ data Conf = Conf
         _partPrefix :: FilePath,
         _partSizes :: [Int],
         _impl :: CS.Impl,
+        _listMethods :: Bool,
         _helpRequired :: Bool
     } deriving Show
 
 $( makeLenses [''Conf] )
 
 instance Default Conf where
-    def = Conf [] 1024 0 "part." [1024] LEAKY.impl False
+    def = Conf [] 1024 0 "part." [1024] LEAKY.impl False False
 
 implMap:: M.Map String CS.Impl
 implMap = 
@@ -87,6 +88,14 @@ options = [
         let update d conf = flip (setL exitSecDelay) conf <$> parseInt d
         in Option ['d'] ["delay"] (ReqArg update "seconds") "Delay in seconds before exiting",
 
+        let update m conf = case M.lookup m implMap of 
+                Nothing -> throwError $ "Implementation \"" ++ m ++ "\" not found" 
+                Just i -> pure $ setL impl i conf
+        in Option ['m'] ["method"] (ReqArg update "method") "Method to employ",
+
+        let update = \conf -> pure $ setL listMethods True conf 
+        in Option ['l'] ["list"] (NoArg update) "List available methods",
+
         let update = \conf -> pure $ setL helpRequired True conf 
         in Option ['h'] ["help"] (NoArg update) "Show this help"
     ]
@@ -95,6 +104,7 @@ parseNonOpts:: [String] -> Conf -> Either String Conf
 parseNonOpts list conf
       -- if help is requested we don't bother with nonopts
     | getL helpRequired conf = pure conf 
+    | getL listMethods conf = pure conf 
     | otherwise = case list of 
             (prefix:sizeList@(s:_)) ->
                 let conf' = setL partPrefix prefix conf
@@ -120,11 +130,10 @@ main = do
         confEi' = errE *> confEi >>= parseNonOpts nonopts 
     case confEi' of
         Left errmsg -> putStrLn errmsg
-        Right conf ->
-            if (getL helpRequired conf)
-            then  
-                printUsage
-            else do 
+        Right conf 
+             |getL helpRequired conf -> printUsage
+             |getL listMethods conf -> mapM_ putStrLn $ M.keys implMap 
+             |otherwise -> do 
                 putStrLn $ show conf
+                putStrLn $ show implMap
                 threadDelay $ (getL exitSecDelay conf)*(1000^2)
-

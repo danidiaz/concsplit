@@ -11,6 +11,7 @@ import Data.Char
 import Data.List
 import Data.Lens.Common
 import Data.Lens.Template
+import Data.Default
 import Debug.Trace
 import Control.Concurrent
 import Control.Monad
@@ -30,15 +31,14 @@ data Conf = Conf
         _exitSecDelay :: Int,
         _partPrefix :: FilePath,
         _partSizes :: [Int],
-        _helpRequired :: Bool,
-        _concSplitFiles :: Int -> [FilePath] -> [(FilePath,Int)] -> IO (),
-        _splitHandle :: Int -> Handle -> [(FilePath,Int)] -> IO ()
-    } 
+        _impl :: Impl,
+        _helpRequired :: Bool
+    } deriving Show
 
 $( makeLenses [''Conf] )
 
-defaultConf:: Conf
-defaultConf = Conf [] 1024 0 "part." [1024] False LEAKY.concSplitFiles LEAKY.splitHandle
+instance Default Conf where
+    def = Conf [] 1024 0 "part." [1024] LEAKY.impl False
 
 parseIntPrefix:: ((Int,T.Text) -> Either String Int) -> String -> Either String Int
 parseIntPrefix postp s =
@@ -106,8 +106,8 @@ main = do
         errE 
             |null errors = pure ()
             |otherwise = throwError $ head errors 
-        --confEi = foldl' (>>=) (pure defaultConf) conftrans
-        confEi = foldM (flip ($)) defaultConf conftrans
+        --confEi = foldl' (>>=) (pure def) conftrans
+        confEi = foldM (flip ($)) def conftrans
         confEi' = errE *> confEi >>= parseNonOpts nonopts 
     case confEi' of
         Left errmsg -> putStrLn errmsg
@@ -116,6 +116,6 @@ main = do
             then  
                 printUsage
             else do 
-                putStrLn $ "foo!"
+                putStrLn $ show conf
                 threadDelay $ (getL exitSecDelay conf)*(1000^2)
 

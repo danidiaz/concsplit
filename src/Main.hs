@@ -43,11 +43,11 @@ instance Default Conf where
 
 implMap:: M.Map String CS.Impl
 implMap = 
-    let addImpl:: CS.Impl -> M.Map String CS.Impl -> M.Map String CS.Impl
+    let addImpl:: M.Map String CS.Impl -> CS.Impl -> M.Map String CS.Impl
         addImpl map impl =
             let names = getL CS.names impl
-            in foldl' (\m n -> insert n impl m) map names 
-    in fold' addImpl M.empty [LEAKY.impl]  
+            in foldl' (\m n -> M.insert n impl m) map names 
+    in foldl' addImpl M.empty [LEAKY.impl]  
 
 parseIntPrefix:: ((Int,T.Text) -> Either String Int) -> String -> Either String Int
 parseIntPrefix postp s =

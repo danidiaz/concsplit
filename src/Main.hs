@@ -8,6 +8,7 @@ import System.IO.Error
 import System.Environment
 import System.Console.GetOpt
 import Data.Char
+import Data.List
 import Data.Lens.Common
 import Data.Lens.Template
 import Debug.Trace
@@ -105,9 +106,10 @@ main = do
         errE 
             |null errors = pure ()
             |otherwise = throwError $ head errors 
-        confE = foldM (flip ($)) defaultConf conftrans
-        confE' = errE *> confE >>= parseNonOpts nonopts 
-    case confE' of
+        --confEi = foldl' (>>=) (pure defaultConf) conftrans
+        confEi = foldM (flip ($)) defaultConf conftrans
+        confEi' = errE *> confEi >>= parseNonOpts nonopts 
+    case confEi' of
         Left errmsg -> putStrLn errmsg
         Right conf ->
             if (getL helpRequired conf)

@@ -47,8 +47,9 @@ implMap =
     let addImpl:: M.Map String CS.Impl -> CS.Impl -> M.Map String CS.Impl
         addImpl map impl =
             let names = getL CS.names impl
-            in foldl' (\m n -> M.insert n impl m) map names 
-    in foldl' addImpl M.empty [LEAKY.impl]  
+            in foldl' (flip $ flip M.insert impl) map names 
+            -- in foldl' (\m name -> M.insert name impl m) map names 
+    in foldl' addImpl M.empty [LEAKY.impl]
 
 parseIntPrefix:: ((Int,T.Text) -> Either String Int) -> String -> Either String Int
 parseIntPrefix postp s =
@@ -122,12 +123,12 @@ main = do
     args <- getArgs
     let 
         (conftrans,nonopts,errors) = getOpt Permute options args
-        errE 
+        errEi
             |null errors = pure ()
             |otherwise = throwError $ head errors 
         --confEi = foldl' (>>=) (pure def) conftrans
         confEi = foldM (flip ($)) def conftrans
-        confEi' = errE *> confEi >>= parseNonOpts nonopts 
+        confEi' = errEi *> confEi >>= parseNonOpts nonopts 
     case confEi' of
         Left errmsg -> putStrLn errmsg
         Right conf 

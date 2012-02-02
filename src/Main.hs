@@ -4,7 +4,7 @@ module Main where
 
 import Prelude hiding (readFile)
 import System.IO hiding (hGetContents,getContents,readFile,interact)
-import System.IO.Error
+--import System.IO.Error
 import System.Environment
 import System.Console.GetOpt
 import Data.Char
@@ -18,7 +18,8 @@ import Control.Concurrent
 import Control.Monad
 import Control.Monad.Error
 import Control.Applicative
-import qualified Control.Exception as CE
+import Control.Exception
+import qualified Control.Exception as E
 import qualified Data.Text as T
 import Data.Text.Read
 
@@ -118,6 +119,9 @@ printUsage =
     let header = "concsplit [OPTIONS] PREFIX PARTSIZE [PARTSIZE...]" 
     in putStr $ usageInfo header options
 
+runImpl :: Conf -> IO ()
+runImpl conf = putStrLn $ show conf
+
 main :: IO ()
 main = do 
     args <- getArgs
@@ -135,6 +139,9 @@ main = do
              |getL helpRequired conf -> printUsage
              |getL listMethods conf -> mapM_ putStrLn $ M.keys implMap 
              |otherwise -> do 
-                putStrLn $ show conf
-                putStrLn $ show implMap
+                let exioHandler =
+                        \e -> do
+                                putStr "An IO exception happened!" 
+                                putStr $ show (e::E.IOException) 
+                E.catch (runImpl conf) exioHandler
                 threadDelay $ (getL exitSecDelay conf)*(1000^2)

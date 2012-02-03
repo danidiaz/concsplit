@@ -25,6 +25,7 @@ import Data.Text.Read
 
 import qualified ConcSplit as CS
 import qualified ConcSplit.Leaky as LEAKY
+import qualified ConcSplit.Nop as NOP
 
 data Conf = Conf
     {
@@ -50,7 +51,7 @@ implMap =
             let names = getL CS.names impl
             in foldl' (flip $ flip M.insert impl) map names 
             -- in foldl' (\m name -> M.insert name impl m) map names 
-    in foldl' addImpl M.empty [LEAKY.impl]
+    in foldl' addImpl M.empty [NOP.impl,LEAKY.impl]
 
 parseIntPrefix:: ((Int,T.Text) -> Either String Int) -> String -> Either String Int
 parseIntPrefix postp s =
@@ -119,8 +120,11 @@ printUsage =
     let header = "concsplit [OPTIONS] PREFIX PARTSIZE [PARTSIZE...]" 
     in putStr $ usageInfo header options
 
-runImpl :: Conf -> IO ()
-runImpl conf = putStrLn $ show conf
+runSelectedImpl :: Conf -> IO ()
+runSelectedImpl conf =
+    CS.runImpl (getL impl conf) (getL chunkSize conf) (getL filesToJoin conf) parts
+    where
+        parts = CS.infiniteParts (getL partPrefix conf) (getL partSizes conf)   
 
 main :: IO ()
 main = do 
@@ -143,5 +147,5 @@ main = do
                         \e -> do
                                 putStr "An IO exception happened!" 
                                 putStr $ show (e::E.IOException) 
-                E.catch (runImpl conf) exioHandler
+                E.catch (runSelectedImpl conf) exioHandler
                 threadDelay $ (getL exitSecDelay conf)*(1000^2)

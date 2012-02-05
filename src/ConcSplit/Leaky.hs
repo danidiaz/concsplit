@@ -23,15 +23,17 @@ concSplitFiles:: Int -> [FilePath] -> [(FilePath,Int)] -> IO ()
 concSplitFiles chunkSize filesToJoin pieces = do
     let allFileEnum =  L.map (enumFile chunkSize) filesToJoin
         globalEnum = L.foldl1' composeEnums allFileEnum 
-    finalIterState <- globalEnum $ splitterIter pieces
-    I.run finalIterState
+    globalEnum $ splitterIter pieces
+    return ()
+    --I.run finalIterState
 
 composeEnums e1 e2 = \i -> e1 i >>= e2
 
 splitHandle:: Int -> Handle -> [(FilePath,Int)] -> IO ()
 splitHandle chunkSize handle pieces = do
-    finalIterState <- enumHandle chunkSize handle $ splitterIter pieces
-    I.run finalIterState
+    enumHandle chunkSize handle $ splitterIter pieces
+    return ()
+    --I.run finalIterState
 
 splitterIter:: [(FilePath,Int)] -> I.Iteratee B.ByteString IO ()
 splitterIter [] = return ()

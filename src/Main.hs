@@ -122,7 +122,7 @@ printUsage =
 
 runSelectedImpl :: Conf -> IO ()
 runSelectedImpl conf =
-    CS.runImpl (getL impl conf) (getL chunkSize conf) (getL filesToJoin conf) parts
+    CS.runImpl (getL impl conf) (getL chunkSize conf) (reverse $ getL filesToJoin conf) parts
     where
         parts = CS.infiniteParts (getL partPrefix conf) (getL partSizes conf)   
 
@@ -145,7 +145,8 @@ main = do
              |otherwise -> do 
                 let exioHandler =
                         \e -> do
-                                putStr "An IO exception happened!" 
-                                putStr $ show (e::E.IOException) 
+                                putStrLn "An IO exception happened!" 
+                                putStrLn $ show (e::E.IOException) 
+                                hFlush stdout
                 E.catch (runSelectedImpl conf) exioHandler
                 threadDelay $ (getL exitSecDelay conf)*(1000^2)

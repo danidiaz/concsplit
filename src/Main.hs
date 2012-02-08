@@ -23,9 +23,8 @@ import qualified Control.Exception as E
 import qualified Data.Text as T
 import Data.Text.Read
 
-import qualified ConcSplit as CS
+import ConcSplit
 import qualified ConcSplit.Leaky as LEAKY
-import qualified ConcSplit.Nop as NOP
 
 data Conf = Conf
     {
@@ -34,7 +33,7 @@ data Conf = Conf
         _exitSecDelay :: Int,
         _partPrefix :: FilePath,
         _partSizes :: [Int],
-        _impl :: CS.Impl,
+        _impl :: Impl,
         _listMethods :: Bool,
         _helpRequired :: Bool
     } deriving Show
@@ -44,14 +43,14 @@ $( makeLenses [''Conf] )
 instance Default Conf where
     def = Conf [] 1024 0 "part." [1024] LEAKY.impl False False
 
-implMap:: M.Map String CS.Impl
+implMap:: M.Map String Impl
 implMap = 
-    let addImpl:: M.Map String CS.Impl -> CS.Impl -> M.Map String CS.Impl
+    let addImpl:: M.Map String Impl -> Impl -> M.Map String Impl
         addImpl map impl =
-            let names = getL CS.names impl
-            in foldl' (flip $ flip M.insert impl) map names 
+            let namel = getL names impl
+            in foldl' (flip $ flip M.insert impl) map namel 
             -- in foldl' (\m name -> M.insert name impl m) map names 
-    in foldl' addImpl M.empty [NOP.impl,LEAKY.impl]
+    in foldl' addImpl M.empty [LEAKY.impl]
 
 parseIntPrefix:: ((Int,T.Text) -> Either String Int) -> String -> Either String Int
 parseIntPrefix postp s =
@@ -121,10 +120,13 @@ printUsage =
     in putStr $ usageInfo header options
 
 runSelectedImpl :: Conf -> IO ()
-runSelectedImpl conf =
-    CS.runImpl (getL impl conf) (getL chunkSize conf) (reverse $ getL filesToJoin conf) parts
-    where
-        parts = CS.infiniteParts (getL partPrefix conf) (getL partSizes conf)   
+runSelectedImpl conf = do
+    let parts = infiniteParts (getL partPrefix conf) (getL partSizes conf)   
+        files = reverse $ getL filesToJoin conf
+        inputs
+            |null files = fromSingleHandle stdin 
+            |otherwise = paths2allocators files
+    run_concsplit (getL impl conf) (getL chunkSize conf) inputs parts
 
 main :: IO ()
 main = do 

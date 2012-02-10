@@ -6,6 +6,8 @@ module ConcSplit.Leaky (
 import System.IO
 import qualified Data.ByteString as B
 import Control.Monad
+import Control.Applicative
+import Control.Monad.CatchIO as CIO
 import Control.Monad.IO.Class
 import ConcSplit
 import Control.Concurrent
@@ -18,29 +20,18 @@ import Data.Iteratee ((><>),(<><))
 impl:: Impl
 impl= Impl ["leaky","vanilla"] concsplit "A leaky method"
 
+-- to do: change concsplit to concEnum, move splitty to impl creation
 concsplit:: Int -> [Allocator Handle] -> [(Allocator Handle,Int)] -> IO ()
 concsplit chunkSize files2join parts = do
     let splitty = splitterIter parts
-    return () 
-    -- TBD
-
---enumAllocators:: Int -> [Allocator] -> I.Enumerator B.ByteString IO ()  
---enumAllocators chunkSize allocators = 
--- TBC
-
---concSplitFiles:: Int -> [FilePath] -> [(FilePath,Int)] -> IO ()
---concSplitFiles chunkSize filesToJoin pieces = do
---    let allFileEnum =  L.map (enumFile chunkSize) filesToJoin
---        globalEnum = L.foldl1' composeEnums allFileEnum 
---    globalEnum $ splitterIter pieces
---    return ()
---
---composeEnums e1 e2 = \i -> e1 i >>= e2
---
---splitHandle:: Int -> Handle -> [(FilePath,Int)] -> IO ()
---splitHandle chunkSize handle pieces = do
---    enumHandle chunkSize handle $ splitterIter pieces
---    return ()
+        enumy ::[Allocator Handle] -> I.Enumerator B.ByteString IO ()  
+        enumy [] ioiter = pure ioiter
+        enumy (h:hs) ioiter = do
+           resultIter <- CIO.bracket (liftIO h)
+                                     (liftIO . snd)
+                                     (\(handle,release) -> enumHandle chunkSize handle ioiter)
+           enumy hs resultIter
+    enumy files2join splitty >> pure ()
 
 splitterIter:: [(Allocator Handle,Int)] -> I.Iteratee B.ByteString IO ()
 splitterIter [] = return ()

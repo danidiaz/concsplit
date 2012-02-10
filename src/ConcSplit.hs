@@ -32,10 +32,10 @@ instance Show Impl where
 run_concsplit:: Impl -> Int -> [Allocator Handle] -> [(Allocator Handle,Int)] -> IO ()
 run_concsplit impl chunks source parts = getL concsplit impl chunks source parts
 
-paths2allocators:: [FilePath] -> [Allocator Handle]
-paths2allocators paths = 
+paths2allocators:: IOMode -> [FilePath] -> [Allocator Handle]
+paths2allocators iomode paths = 
     let 
-        name2handle = \f -> openFile f WriteMode 
+        name2handle = \f -> openFile f iomode
         handle2alloc = \h -> h >>= (\h -> return (h, hClose h))
     in map (handle2alloc . name2handle) paths 
 
@@ -43,7 +43,7 @@ infiniteParts:: FilePath -> [Int] -> [(Allocator Handle,Int)]
 infiniteParts prefix sizes =
     let infiniteSizes = init sizes ++ (repeat $ last sizes)
         infiniteNames = map (\n -> prefix ++ show n) [1..]
-    in zip (paths2allocators infiniteNames) infiniteSizes 
+    in zip (paths2allocators WriteMode infiniteNames) infiniteSizes 
         
 
 fromSingleHandle:: Handle -> [Allocator Handle]

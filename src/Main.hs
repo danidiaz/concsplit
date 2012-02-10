@@ -125,7 +125,7 @@ runSelectedImpl conf = do
         files = reverse $ getL filesToJoin conf
         inputs
             |null files = fromSingleHandle stdin 
-            |otherwise = paths2allocators files
+            |otherwise = paths2allocators ReadMode files
     run_concsplit (getL impl conf) (getL chunkSize conf) inputs parts
 
 main :: IO ()

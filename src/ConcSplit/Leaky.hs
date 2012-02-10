@@ -27,10 +27,13 @@ concsplit chunkSize files2join parts = do
         enumy ::[Allocator Handle] -> I.Enumerator B.ByteString IO ()  
         enumy [] ioiter = pure ioiter
         enumy (h:hs) ioiter = do
-           resultIter <- CIO.bracket (liftIO h)
-                                     (liftIO . snd)
-                                     (\(handle,release) -> enumHandle chunkSize handle ioiter)
-           enumy hs resultIter
+             resultIter <- CIO.bracket h
+                                       snd
+                                       (\(handle,release) -> enumHandle chunkSize handle ioiter)
+--           resultIter <- CIO.bracket (liftIO h)
+--                                     (liftIO . snd)
+--                                     (\(handle,release) -> enumHandle chunkSize handle ioiter)
+             enumy hs resultIter
     enumy files2join splitty >> pure ()
 
 splitterIter:: [(Allocator Handle,Int)] -> I.Iteratee B.ByteString IO ()

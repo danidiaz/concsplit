@@ -46,6 +46,6 @@ infiniteParts prefix sizes =
     in zip (paths2allocators WriteMode infiniteNames) infiniteSizes 
         
 
-fromPreexistingHandle:: Handle -> [Allocator Handle]
-fromPreexistingHandle h = [return (h,return ())]
+fromPreexistingHandle:: Handle -> Allocator Handle
+fromPreexistingHandle h = return (h,return ())
 

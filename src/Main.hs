@@ -124,7 +124,7 @@ runSelectedImpl conf = do
     let parts = infiniteParts (getL partPrefix conf) (getL partSizes conf)   
         files = reverse $ getL filesToJoin conf
         inputs
-            |null files = fromPreexistingHandle stdin 
+            |null files = [fromPreexistingHandle stdin]
             |otherwise = paths2allocators ReadMode files
     run_concsplit (getL impl conf) (getL chunkSize conf) inputs parts
 

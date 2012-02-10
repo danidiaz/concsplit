@@ -7,7 +7,7 @@ module ConcSplit (
        run_concsplit,
        paths2allocators,
        infiniteParts,
-       fromSingleHandle 
+       fromPreexistingHandle 
     ) where
 
 import System.IO hiding (hGetContents,getContents,readFile,interact)
@@ -46,6 +46,6 @@ infiniteParts prefix sizes =
     in zip (paths2allocators WriteMode infiniteNames) infiniteSizes 
         
 
-fromSingleHandle:: Handle -> [Allocator Handle]
-fromSingleHandle h = [return (h,return ())]
+fromPreexistingHandle:: Handle -> [Allocator Handle]
+fromPreexistingHandle h = [return (h,return ())]
 

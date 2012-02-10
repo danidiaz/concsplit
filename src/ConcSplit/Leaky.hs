@@ -47,6 +47,6 @@ takeNIterHandle:: Int -> Handle -> I.Iteratee B.ByteString IO ()
 takeNIterHandle n = I.joinI . I.take n . iterHandle
 
 iterHandle:: Handle -> I.Iteratee B.ByteString IO ()
-iterHandle handle = I.mapChunksM_ $ B.hPut handle 
+iterHandle = I.mapChunksM_ . B.hPut
 
 

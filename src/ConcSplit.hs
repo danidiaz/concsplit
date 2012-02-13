@@ -3,8 +3,8 @@
 module ConcSplit (
        Allocator,
        Impl (..),
-       names,
-       run_concsplit,
+       suggestedName,
+       concsplit,
        paths2allocators,
        infiniteParts,
        fromPreexistingHandle 
@@ -19,7 +19,7 @@ type Allocator a = IO (a,IO ())
 
 data Impl = Impl
     {
-        _names :: [String],
+        _suggestedName :: String,
         _concsplit :: Int -> [Allocator Handle] -> [(Allocator Handle,Int)] -> IO (),
         _desc :: String
     }
@@ -27,10 +27,7 @@ data Impl = Impl
 $( makeLenses [''Impl] )
 
 instance Show Impl where
-    show impl = (show $ getL names impl) ++ (getL desc impl)
-
-run_concsplit:: Impl -> Int -> [Allocator Handle] -> [(Allocator Handle,Int)] -> IO ()
-run_concsplit impl chunks source parts = getL concsplit impl chunks source parts
+    show impl = getL desc impl
 
 paths2allocators:: IOMode -> [FilePath] -> [Allocator Handle]
 paths2allocators iomode paths = 

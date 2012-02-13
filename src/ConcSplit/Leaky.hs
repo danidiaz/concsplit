@@ -17,12 +17,12 @@ import qualified Data.Iteratee as I
 import Data.Iteratee.IO.Handle
 import Data.Iteratee ((><>),(<><))
 
-impl:: Impl
-impl= Impl ["leaky","vanilla"] concsplit "A leaky method"
+impl ::Impl
+impl = Impl "leaky" concsplit_impl "A leaky method"
 
 -- to do: change concsplit to concEnum, move splitty to impl creation
-concsplit:: Int -> [Allocator Handle] -> [(Allocator Handle,Int)] -> IO ()
-concsplit chunkSize files2join parts = do
+concsplit_impl:: Int -> [Allocator Handle] -> [(Allocator Handle,Int)] -> IO ()
+concsplit_impl chunkSize files2join parts = do
     let splitty = splitterIter parts
         enumy ::[Allocator Handle] -> I.Enumerator B.ByteString IO ()  
         enumy [] ioiter = pure ioiter

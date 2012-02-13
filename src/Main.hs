@@ -15,6 +15,7 @@ import Data.Lens.Template
 import Data.Default
 import Debug.Trace
 import Control.Concurrent
+import Control.Category
 import Control.Monad
 import Control.Monad.Error
 import Control.Applicative
@@ -47,10 +48,7 @@ instance Default Conf where
 implMap:: M.Map String Impl
 implMap = 
     let addImpl:: M.Map String Impl -> Impl -> M.Map String Impl
-        addImpl map impl =
-            let namel = getL names impl
-            in foldl' (flip $ flip M.insert impl) map namel 
-            -- in foldl' (\m name -> M.insert name impl m) map names 
+        addImpl m impl = M.insert (getL suggestedName impl) impl m
     in foldl' addImpl M.empty [LEAKY.impl]
 
 options = [
@@ -99,7 +97,7 @@ runSelectedImpl conf = do
         inputs
             |null files = [fromPreexistingHandle stdin]
             |otherwise = paths2allocators ReadMode files
-    run_concsplit (getL impl conf) (getL chunkSize conf) inputs parts
+    getL (impl >>> concsplit) conf (getL chunkSize conf) inputs parts
 
 main :: IO ()
 main = do 

@@ -48,7 +48,7 @@ parse multipliers = parseDecimal 0 . T.pack
                      parseMult partial@(notyetmult,text') ((multText,multValue):mults) =
                         case T.stripPrefix multText text' of
                             Just text'' -> parseDecimal (accum + notyetmult*multValue) text''
-                            _ -> parseMult partial mults 
+                            Nothing -> parseMult partial mults 
                   in decimal text >>= flip parseMult multipliers 
 
 prettyPrint:: [(T.Text,Int)] -> Int -> String

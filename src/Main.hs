@@ -23,6 +23,7 @@ import qualified Control.Exception as E
 import qualified Data.Text as T
 import Data.Text.Read
 
+import Util.Parser
 import ConcSplit
 import qualified ConcSplit.Leaky as LEAKY
 
@@ -52,34 +53,6 @@ implMap =
             -- in foldl' (\m name -> M.insert name impl m) map names 
     in foldl' addImpl M.empty [LEAKY.impl]
 
-parseIntPrefix:: ((Int,T.Text) -> Either String Int) -> String -> Either String Int
-parseIntPrefix postp s =
-    let errCtx = flip catchError (\e -> throwError $ "While parsing " ++ s ++ ": " ++ e)
-    in errCtx $ postp =<< decimal (T.pack s)
-
-parseInt:: String -> Either String Int
-parseInt = 
-    let postp (num,rest)
-            |T.null rest = return num
-            |otherwise = throwError $ "Unexpected characters after " ++ (show num)
-    in parseIntPrefix postp
-
-parseSize:: String -> Either String Int
-parseSize = 
-    let
-        kiloMult = T.pack "K"
-        megaMult = T.pack "M" 
-        gigaMult = T.pack "G" 
-        parseMultiplier mult 
-            | T.null mult = pure 1
-            | mult == kiloMult = pure 1024
-            | mult == megaMult = pure (1024^2)
-            | mult == gigaMult = pure (1024^3)
-            | otherwise = throwError "Unknown size multiplier"
-        postp (parsed,rest) = (*) parsed <$> parseMultiplier rest 
-    in parseIntPrefix postp
-
-options:: [OptDescr (Conf -> Either String Conf)]
 options = [
         let update = \file conf -> pure $ modL filesToJoin  ((:) file) conf 
         in Option ['f'] ["file"] (ReqArg update "filename") "Input file name",
@@ -87,7 +60,7 @@ options = [
         let update c conf = flip (setL chunkSize) conf <$> parseSize c
         in Option ['c'] ["chunkSize"] (ReqArg update "bytes") "Chunk size in bytes",
 
-        let update d conf = flip (setL exitSecDelay) conf <$> parseInt d
+        let update d conf = flip (setL exitSecDelay) conf <$> parseUnadornedInt d
         in Option ['d'] ["delay"] (ReqArg update "seconds") "Delay in seconds before exiting",
 
         let update m conf = case M.lookup m implMap of 

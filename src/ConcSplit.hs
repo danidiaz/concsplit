@@ -20,7 +20,7 @@ type Allocator a = IO (a,IO ())
 data Impl = Impl
     {
         _suggestedName :: String,
-        _concsplit :: Int -> [Allocator Handle] -> [(Allocator Handle,Int)] -> IO (),
+        _concsplit :: [Allocator Handle] -> [(Allocator Handle,Int)] -> IO (),
         _desc :: String
     }
 

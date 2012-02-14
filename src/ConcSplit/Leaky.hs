@@ -1,6 +1,5 @@
 module ConcSplit.Leaky (
-        impl,
-        concsplit
+        makeImpl
     ) where 
 
 import System.IO
@@ -12,13 +11,19 @@ import Control.Monad.IO.Class
 import ConcSplit
 import Control.Concurrent
 import Data.List
+import Util.Parser
 import qualified Data.List as L
 import qualified Data.Iteratee as I
 import Data.Iteratee.IO.Handle
 import Data.Iteratee ((><>),(<><))
 
-impl ::Impl
-impl = Impl "leaky" concsplit_impl "A leaky method"
+makeImpl :: Int -> Impl
+makeImpl chunkSize = 
+    let 
+        prettySize = prettyPrintSize chunkSize
+        name = "leaky" ++ prettySize
+        desc = "leaky impl using iterators (enumerator chunk size of " ++ prettySize ++ ")"
+    in Impl name (concsplit_impl chunkSize) desc
 
 -- to do: change concsplit to concEnum, move splitty to impl creation
 concsplit_impl:: Int -> [Allocator Handle] -> [(Allocator Handle,Int)] -> IO ()

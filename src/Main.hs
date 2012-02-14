@@ -15,7 +15,7 @@ import Data.Lens.Template
 import Data.Default
 import Debug.Trace
 import Control.Concurrent
-import Control.Category
+import qualified Control.Category as C
 import Control.Monad
 import Control.Monad.Error
 import Control.Applicative
@@ -31,7 +31,6 @@ import qualified ConcSplit.Leaky as LEAKY
 data Conf = Conf
     {
         _filesToJoin :: [FilePath], -- empty list means we read from standard input
-        _chunkSize :: Int,
         _exitSecDelay :: Int,
         _partPrefix :: FilePath,
         _partSizes :: [Int],
@@ -43,20 +42,17 @@ data Conf = Conf
 $( makeLenses [''Conf] )
 
 instance Default Conf where
-    def = Conf [] 1024 0 "part." [1024] LEAKY.impl False False
+    def = Conf [] 0 "part." [1024] (LEAKY.makeImpl 1024) False False
 
 implMap:: M.Map String Impl
 implMap = 
     let addImpl:: M.Map String Impl -> Impl -> M.Map String Impl
         addImpl m impl = M.insert (getL suggestedName impl) impl m
-    in foldl' addImpl M.empty [LEAKY.impl]
+    in foldl' addImpl M.empty [LEAKY.makeImpl 3, LEAKY.makeImpl 1024]
 
 options = [
         let update = \file conf -> pure $ modL filesToJoin  ((:) file) conf 
         in Option ['f'] ["file"] (ReqArg update "filename") "Input file name",
-
-        let update c conf = flip (setL chunkSize) conf <$> parseSize c
-        in Option ['c'] ["chunkSize"] (ReqArg update "bytes") "Chunk size in bytes",
 
         let update d conf = flip (setL exitSecDelay) conf <$> parseUnadornedInt d
         in Option ['d'] ["delay"] (ReqArg update "seconds") "Delay in seconds before exiting",
@@ -97,7 +93,7 @@ runSelectedImpl conf = do
         inputs
             |null files = [fromPreexistingHandle stdin]
             |otherwise = paths2allocators ReadMode files
-    getL (impl >>> concsplit) conf (getL chunkSize conf) inputs parts
+    getL (impl C.>>> concsplit) conf inputs parts
 
 main :: IO ()
 main = do 
@@ -114,7 +110,8 @@ main = do
         Left errmsg -> putStrLn errmsg
         Right conf 
              |getL helpRequired conf -> printUsage
-             |getL listMethods conf -> mapM_ putStrLn $ M.keys implMap 
+             |getL listMethods conf -> 
+                mapM_ putStrLn $ ((map (\(k,v) -> k ++ " - " ++ show v)) . M.assocs) implMap 
              |otherwise -> do 
                 let exioHandler =
                         \e -> do

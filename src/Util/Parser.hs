@@ -53,7 +53,7 @@ parse multipliers = parseDecimal 0 . T.pack
 
 prettyPrint:: [(T.Text,Int)] -> Int -> String
 prettyPrint multipliers number =
-    let prettyPrint' _ text [] = show text
+    let prettyPrint' _ text [] = T.unpack text
         prettyPrint' amount text ((multText,mult):ms) =
             if amount >= mult
             then let text' = foldl' T.append T.empty [text, T.pack . show $ amount `div` mult, multText]

@@ -30,11 +30,15 @@ instance Show Impl where
     show impl = getL desc impl
 
 paths2allocators:: IOMode -> [FilePath] -> [Allocator Handle]
-paths2allocators iomode paths = 
-    let 
-        name2handle = \f -> openFile f iomode
-        handle2alloc = \h -> h >>= (\h -> return (h, hClose h))
-    in map (handle2alloc . name2handle) paths 
+paths2allocators iomode = 
+    let path2allocator f = do   
+            let openMsg = "opening file \"" ++ f ++ "\" with mode: " ++ show iomode
+                closeMsg = "file \"" ++ f ++ "\" closed"  
+            putStrLn openMsg 
+            handle <- openFile f iomode
+            return (handle, putStrLn closeMsg >> hClose handle)   
+                  
+    in map path2allocator
 
 infiniteParts:: FilePath -> [Int] -> [(Allocator Handle,Int)]
 infiniteParts prefix sizes =

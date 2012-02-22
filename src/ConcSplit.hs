@@ -41,7 +41,6 @@ paths2allocators iomode =
             putStrLn openMsg 
             handle <- openFile f iomode
             return (handle, putStrLn closeMsg >> hClose handle)   
-                  
     in map path2allocator
 
 infiniteParts:: FilePath -> [Int] -> [(Allocator Handle,Int)]
@@ -49,11 +48,9 @@ infiniteParts prefix sizes =
     let infiniteSizes = init sizes ++ (repeat $ last sizes)
         infiniteNames = map (\n -> prefix ++ show n) [1..]
     in zip (paths2allocators WriteMode infiniteNames) infiniteSizes 
-        
 
 fromPreexistingHandle:: Handle -> Allocator Handle
 fromPreexistingHandle h = return (h,return ())
-
 
 iterHandle:: Handle -> I.Iteratee B.ByteString IO ()
 iterHandle = I.mapChunksM_ . B.hPut

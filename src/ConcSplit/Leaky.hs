@@ -45,14 +45,6 @@ splitterIter ((allocator,size):xs) = do
     (handle,release) <- liftIO allocator
     --liftIO $ putStrLn $ show size
     --liftIO $ threadDelay (1*1000^2)
-    takeNIterHandle size handle
+    cappedIterHandle size handle
     liftIO release
     splitterIter xs
-
-takeNIterHandle:: Int -> Handle -> I.Iteratee B.ByteString IO ()
-takeNIterHandle n = I.joinI . I.take n . iterHandle
-
-iterHandle:: Handle -> I.Iteratee B.ByteString IO ()
-iterHandle = I.mapChunksM_ . B.hPut
-
-

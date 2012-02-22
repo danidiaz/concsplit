@@ -7,13 +7,17 @@ module ConcSplit (
        concsplit,
        paths2allocators,
        infiniteParts,
-       fromPreexistingHandle 
+       fromPreexistingHandle,
+       iterHandle,
+       cappedIterHandle
     ) where
 
 import System.IO hiding (hGetContents,getContents,readFile,interact)
 import Data.List
 import Data.Lens.Common
 import Data.Lens.Template
+import qualified Data.Iteratee as I
+import qualified Data.ByteString as B
 
 type Allocator a = IO (a,IO ())
 
@@ -50,3 +54,9 @@ infiniteParts prefix sizes =
 fromPreexistingHandle:: Handle -> Allocator Handle
 fromPreexistingHandle h = return (h,return ())
 
+
+iterHandle:: Handle -> I.Iteratee B.ByteString IO ()
+iterHandle = I.mapChunksM_ . B.hPut
+
+cappedIterHandle:: Int -> Handle -> I.Iteratee B.ByteString IO ()
+cappedIterHandle n = I.joinI . I.take n . iterHandle

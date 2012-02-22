@@ -42,7 +42,7 @@ data Conf = Conf
 $( makeLenses [''Conf] )
 
 instance Default Conf where
-    def = Conf [] 0 "part." [1024] (LEAKY.makeImpl 1024) False False
+    def = Conf [] 0 "__part." [] (LEAKY.makeImpl 1024) False False
 
 implMap:: M.Map String Impl
 implMap = 
@@ -51,11 +51,14 @@ implMap =
     in foldl' addImpl M.empty [LEAKY.makeImpl 3, LEAKY.makeImpl 1024]
 
 options = [
-        let update = \file conf -> pure $ modL filesToJoin  ((:) file) conf 
-        in Option ['f'] ["file"] (ReqArg update "filename") "Input file name",
-
         let update d conf = flip (setL exitSecDelay) conf <$> parseUnadornedInt d
         in Option ['d'] ["delay"] (ReqArg update "seconds") "Delay in seconds before exiting",
+
+        let update p conf = pure $ setL partPrefix p conf
+        in Option ['p'] ["prefix"] (ReqArg update "prefix") "Filename prefix for the output part files",
+
+        let update s conf = (\p -> modL partSizes ((:) p) conf) <$> parseSize s
+        in Option ['s'] ["size"] (ReqArg update "size") "Output part file size",
 
         let update m conf = case M.lookup m implMap of 
                 Nothing -> throwError $ "Implementation \"" ++ m ++ "\" not found" 
@@ -69,21 +72,18 @@ options = [
         in Option ['h'] ["help"] (NoArg update) "Show this help"
     ]
 
-parseNonOpts:: [String] -> Conf -> Either String Conf 
-parseNonOpts list conf
-      -- if help is requested we don't bother with nonopts
+
+validate::Conf -> Either String Conf
+validate conf
+    -- if help is requested we don't bother with nonopts
     | getL helpRequired conf = pure conf 
-    | getL listMethods conf = pure conf 
-    | otherwise = case list of 
-            (prefix:sizeList@(s:_)) ->
-                let conf' = setL partPrefix prefix conf
-                in flip (setL partSizes) conf' <$> mapM parseSize sizeList
-            _ -> throwError $ "You need to provide a prefix for the result file," ++ 
-                              " and at least one part size!"
+    | getL listMethods conf = pure conf
+    | null (getL partSizes conf) = Left "You must provide at least one output part size."
+    | otherwise = pure conf
 
 printUsage::IO ()
 printUsage =
-    let header = "concsplit [OPTIONS] PREFIX PARTSIZE [PARTSIZE...]" 
+    let header = "concsplit [OPTIONS] [FILE...]" 
     in putStr $ usageInfo header options
 
 runSelectedImpl :: Conf -> IO ()
@@ -103,10 +103,8 @@ main = do
         errEi
             |null errors = pure ()
             |otherwise = throwError $ head errors 
-        --confEi = foldl' (>>=) (pure def) conftrans
-        confEi = foldM (flip ($)) def conftrans
-        confEi' = errEi *> confEi >>= parseNonOpts nonopts 
-    case confEi' of
+        confEi = liftA (setL filesToJoin nonopts) (foldM (flip ($)) def conftrans)
+    case errEi *> confEi >>= validate of
         Left errmsg -> putStrLn errmsg
         Right conf 
              |getL helpRequired conf -> printUsage

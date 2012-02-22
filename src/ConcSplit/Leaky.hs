@@ -23,30 +23,28 @@ makeImpl chunkSize =
         prettySize = prettyPrintSize chunkSize
         name = "leaky" ++ prettySize
         desc = "leaky impl using iterators (enumerator chunk size of " ++ prettySize ++ ")"
-    in Impl name (concsplit_impl chunkSize) desc
+        concsplit_impl files parts = concEnum chunkSize files (splitterIter parts) >> pure () 
+    in Impl name concsplit_impl desc
 
--- to do: change concsplit to concEnum, move splitty to impl creation
-concsplit_impl:: Int -> [Allocator Handle] -> [(Allocator Handle,Int)] -> IO ()
-concsplit_impl chunkSize files2join parts = do
-    let splitty = splitterIter parts
-        enumy ::[Allocator Handle] -> I.Enumerator B.ByteString IO ()  
-        enumy [] ioiter = pure ioiter
-        enumy (h:hs) ioiter = do
+concEnum:: Int -> [Allocator Handle] -> I.Enumerator B.ByteString IO a 
+concEnum chunkSize files2join splitty= do
+    let concEnum' ::[Allocator Handle] -> I.Enumerator B.ByteString IO a 
+        concEnum' [] ioiter = pure ioiter
+        concEnum' (h:hs) ioiter = do
              resultIter <- CIO.bracket h
                                        snd
                                        (\(handle,release) -> enumHandle chunkSize handle ioiter)
 --           resultIter <- CIO.bracket (liftIO h)
 --                                     (liftIO . snd)
 --                                     (\(handle,release) -> enumHandle chunkSize handle ioiter)
-             enumy hs resultIter
-    enumy files2join splitty >> pure ()
+             concEnum' hs resultIter
+    concEnum' files2join splitty
 
-splitterIter:: [(Allocator Handle,Int)] -> I.Iteratee B.ByteString IO ()
 splitterIter [] = return ()
 splitterIter ((allocator,size):xs) = do
     (handle,release) <- liftIO allocator
-    liftIO $ putStrLn $ show size
-    liftIO $ threadDelay (1*1000^2)
+    --liftIO $ putStrLn $ show size
+    --liftIO $ threadDelay (1*1000^2)
     takeNIterHandle size handle
     liftIO release
     splitterIter xs

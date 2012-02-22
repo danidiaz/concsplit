@@ -27,6 +27,7 @@ import Data.Text.Read
 import Util.Parser
 import ConcSplit
 import qualified ConcSplit.Leaky as LEAKY
+import qualified ConcSplit.AsyncLeaky as ASYNC_LEAKY
 
 data Conf = Conf
     {

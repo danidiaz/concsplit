@@ -40,6 +40,7 @@ concEnum chunkSize files2join splitty= do
              concEnum' hs resultIter
     concEnum' files2join splitty
 
+splitterIter::[(Allocator Handle,Int)] -> I.Iteratee B.ByteString IO ()
 splitterIter [] = return ()
 splitterIter ((allocator,size):xs) = do
     (handle,release) <- liftIO allocator

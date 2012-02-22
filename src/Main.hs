@@ -111,6 +111,7 @@ main = do
              |getL listMethods conf -> 
                 mapM_ putStrLn $ ((map (\(k,v) -> k ++ " - " ++ show v)) . M.assocs) implMap 
              |otherwise -> do 
+                putStrLn . show $ conf
                 let exioHandler =
                         \e -> do
                                 putStrLn "An IO exception happened!" 

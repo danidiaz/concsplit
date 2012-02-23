@@ -2,6 +2,8 @@
 
 module ConcSplit (
        Allocator,
+       BiAllocator,
+       MkBi,
        Impl (..),
        suggestedName,
        concsplit,
@@ -44,7 +46,7 @@ paths2allocators:: IOMode -> [FilePath] -> [Allocator Handle]
 paths2allocators iomode = 
     let path2allocator f = do   
             let openMsg = "opening file \"" ++ f ++ "\" with mode: " ++ show iomode
-                closeMsg = "file \"" ++ f ++ "\" closed"  
+                closeMsg = "closing file \"" ++ f ++ "\""  
             putStrLn openMsg 
             handle <- openFile f iomode
             return (handle, putStrLn closeMsg >> hClose handle)   

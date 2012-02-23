@@ -49,7 +49,7 @@ implMap:: M.Map String Impl
 implMap = 
     let addImpl:: M.Map String Impl -> Impl -> M.Map String Impl
         addImpl m impl = M.insert (getL suggestedName impl) impl m
-    in foldl' addImpl M.empty [LEAKY.makeImpl 3, LEAKY.makeImpl 1024]
+    in foldl' addImpl M.empty [LEAKY.makeImpl 3, LEAKY.makeImpl 1024,ASYNC_LEAKY.makeImpl 3, ASYNC_LEAKY.makeImpl 1024]
 
 options = [
         let update d conf = flip (setL exitSecDelay) conf <$> parseUnadornedInt d

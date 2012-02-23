@@ -21,30 +21,28 @@ makeImpl :: Int -> Impl
 makeImpl chunkSize = 
     let 
         prettySize = prettyPrintSize chunkSize
-        name = "leaky" ++ prettySize
-        desc = "leaky impl using iterators (enumerator chunk size of " ++ prettySize ++ ")"
-        concsplit_impl files parts = concEnum chunkSize files (splitterIter parts) >> pure () 
-    in Impl name concsplit_impl desc
+        name = "async-leaky" ++ prettySize
+        desc = "async-leaky impl using iterators (enumerator chunk size of " ++ prettySize ++ ")"
+    in Impl name (concsplit_impl chunkSize) desc
 
-concEnum:: Int -> [Allocator Handle] -> I.Enumerator B.ByteString IO a 
-concEnum chunkSize files2join splitty= do
-    let concEnum' ::[Allocator Handle] -> I.Enumerator B.ByteString IO a 
-        concEnum' [] ioiter = pure ioiter
-        concEnum' (h:hs) ioiter = do
-             resultIter <- CIO.bracket h
-                                       snd
-                                       (\(handle,release) -> enumHandle chunkSize handle ioiter)
---           resultIter <- CIO.bracket (liftIO h)
---                                     (liftIO . snd)
---                                     (\(handle,release) -> enumHandle chunkSize handle ioiter)
-             concEnum' hs resultIter
-    concEnum' files2join splitty
+type MkBi' = MkBi Handle (I.Iteratee B.ByteString IO ())
 
-splitterIter [] = return ()
-splitterIter ((allocator,size):xs) = do
-    (handle,release) <- liftIO allocator
-    --liftIO $ putStrLn $ show size
-    --liftIO $ threadDelay (1*1000^2)
-    cappedIterHandle size handle
-    liftIO release
-    splitterIter xs
+concsplit_impl:: Int -> [Allocator Handle] -> [(Allocator Handle,Int)] -> IO ()
+concsplit_impl chunkSize files2join parts = 
+    let mkIter (allocator,size) = allocator >>= \(handle,cleanup) -> return (cappedIterHandle chunkSize handle,cleanup) 
+
+        writeToIter handle iter = enumHandle chunkSize handle iter 
+
+        go:: MkBi' -> [Allocator (I.Iteratee B.ByteString IO ())] -> [Allocator Handle] -> IO () 
+        go allocStrategy destinations [] = head destinations >>= snd 
+        go allocStrategy destinations (source:sources) = do 
+            (handle,releaseHandle,iter,releaseIter) <- allocStrategy source (head destinations) 
+            iter' <- CIO.onException (CIO.onException (writeToIter handle iter) releaseIter) releaseHandle       
+            putStrLn "#######"
+            atEOF <- hIsEOF handle
+            if atEOF
+                then do CIO.onException releaseHandle releaseIter
+                        go allocRightToLeft (pure (iter',releaseIter):tail destinations) sources 
+                else do CIO.onException releaseIter releaseHandle
+                        go allocLeftToRight (tail destinations) (pure (handle,releaseHandle):sources)
+    in go allocLeftToRight (map mkIter parts) files2join 

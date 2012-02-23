@@ -28,6 +28,7 @@ import Util.Parser
 import ConcSplit
 import qualified ConcSplit.Leaky as LEAKY
 import qualified ConcSplit.AsyncLeaky as ASYNC_LEAKY
+import qualified ConcSplit.Safe as SAFE
 
 data Conf = Conf
     {
@@ -42,13 +43,16 @@ data Conf = Conf
 $( makeLenses [''Conf] )
 
 instance Default Conf where
-    def = Conf [] "__part." [] (ASYNC_LEAKY.makeImpl 1024) False False
+    def = Conf [] "__part." [] (SAFE.makeImpl 1024) False False
 
 implMap:: M.Map String Impl
 implMap = 
     let addImpl:: M.Map String Impl -> Impl -> M.Map String Impl
         addImpl m impl = M.insert (getL suggestedName impl) impl m
-    in foldl' addImpl M.empty [LEAKY.makeImpl 3, LEAKY.makeImpl 1024,ASYNC_LEAKY.makeImpl 3, ASYNC_LEAKY.makeImpl 1024]
+    in foldl' addImpl M.empty [ LEAKY.makeImpl 3, LEAKY.makeImpl 1024,
+                                ASYNC_LEAKY.makeImpl 3, ASYNC_LEAKY.makeImpl 1024,
+                                SAFE.makeImpl 3, SAFE.makeImpl 1024
+                              ]
 
 options = [
         let update p conf = pure $ setL partPrefix p conf

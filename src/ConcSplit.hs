@@ -69,9 +69,9 @@ cappedIterHandle n = I.joinI . I.take n . iterHandle
 
 allocLeftToRight::MkBi a b
 allocLeftToRight a1 a2 =
-    CIO.bracket a1
-                snd
-                (\(handle,release) -> a2 >>= \(handle2,release2) -> return (handle,release,handle2,release2))
+    CIO.bracketOnError a1
+                       snd
+                       (\(handle,release) -> a2 >>= \(handle2,release2) -> return (handle,release,handle2,release2))
 
 allocRightToLeft::MkBi a b
 allocRightToLeft a1 a2 = allocLeftToRight a2 a1 >>= \(x,xCleanup,y,yCleanup) -> return (y,yCleanup,x,xCleanup)

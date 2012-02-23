@@ -29,7 +29,7 @@ type MkBi' = MkBi Handle (I.Iteratee B.ByteString IO ())
 
 concsplit_impl:: Int -> [Allocator Handle] -> [(Allocator Handle,Int)] -> IO ()
 concsplit_impl chunkSize files2join parts = 
-    let mkIter (allocator,size) = allocator >>= \(handle,cleanup) -> return (cappedIterHandle chunkSize handle,cleanup) 
+    let mkIter (allocator,size) = allocator >>= \(handle,cleanup) -> return (cappedIterHandle size handle,cleanup) 
 
         writeToIter handle iter = enumHandle chunkSize handle iter 
 
@@ -38,7 +38,6 @@ concsplit_impl chunkSize files2join parts =
         go allocStrategy destinations (source:sources) = do 
             (handle,releaseHandle,iter,releaseIter) <- allocStrategy source (head destinations) 
             iter' <- CIO.onException (CIO.onException (writeToIter handle iter) releaseIter) releaseHandle       
-            putStrLn "#######"
             atEOF <- hIsEOF handle
             if atEOF
                 then do CIO.onException releaseHandle releaseIter

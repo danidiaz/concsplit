@@ -90,7 +90,7 @@ printUsage =
 runSelectedImpl :: Conf -> IO ()
 runSelectedImpl conf = do
     let parts = infiniteParts (getL partPrefix conf) (getL partSizes conf)   
-        files = reverse $ getL filesToJoin conf
+        files = getL filesToJoin conf
         inputs
             |null files = [fromPreexistingHandle stdin]
             |otherwise = paths2allocators ReadMode files

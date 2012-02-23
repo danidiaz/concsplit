@@ -35,14 +35,16 @@ concsplit_impl chunkSize files2join parts =
         writeToIter handle iter = enumHandle chunkSize handle iter 
 
         go:: (forall a. IO a -> IO a) -> MkBi' -> [Allocator (I.Iteratee B.ByteString IO ())] -> [Allocator Handle] -> IO () 
-        go restore allocStrategy destinations [] = head destinations >>= snd 
-        go restore allocStrategy destinations (source:sources) = do 
-            (handle,releaseHandle,iter,releaseIter) <- allocStrategy source (head destinations) 
-            iter' <- onException (onException (restore $ writeToIter handle iter) releaseIter) releaseHandle       
-            atEOF <- hIsEOF handle
-            if atEOF
-                then do onException releaseHandle releaseIter
-                        go restore allocRightToLeft (pure (iter',releaseIter):tail destinations) sources 
-                else do onException releaseIter releaseHandle
-                        go restore allocLeftToRight (tail destinations) (pure (handle,releaseHandle):sources)
+        go restore allocStrategy destinations sources = 
+            let go' _ destinations [] = head destinations >>= snd 
+                go' allocStrategy destinations (source:sources) = do 
+                    (handle,releaseHandle,iter,releaseIter) <- allocStrategy source (head destinations) 
+                    iter' <- onException (onException (restore $ writeToIter handle iter) releaseIter) releaseHandle       
+                    atEOF <- hIsEOF handle
+                    if atEOF
+                        then do onException releaseHandle releaseIter
+                                go' allocRightToLeft (pure (iter',releaseIter):tail destinations) sources 
+                        else do onException releaseIter releaseHandle
+                                go' allocLeftToRight (tail destinations) (pure (handle,releaseHandle):sources)
+            in go' allocStrategy destinations sources
     in mask $ \restore -> go restore allocLeftToRight (map mkIter parts) files2join 

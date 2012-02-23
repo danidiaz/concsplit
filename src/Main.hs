@@ -32,7 +32,6 @@ import qualified ConcSplit.AsyncLeaky as ASYNC_LEAKY
 data Conf = Conf
     {
         _filesToJoin :: [FilePath], -- empty list means we read from standard input
-        _exitSecDelay :: Int,
         _partPrefix :: FilePath,
         _partSizes :: [Int],
         _impl :: Impl,
@@ -43,7 +42,7 @@ data Conf = Conf
 $( makeLenses [''Conf] )
 
 instance Default Conf where
-    def = Conf [] 0 "__part." [] (LEAKY.makeImpl 1024) False False
+    def = Conf [] "__part." [] (ASYNC_LEAKY.makeImpl 1024) False False
 
 implMap:: M.Map String Impl
 implMap = 
@@ -52,9 +51,6 @@ implMap =
     in foldl' addImpl M.empty [LEAKY.makeImpl 3, LEAKY.makeImpl 1024,ASYNC_LEAKY.makeImpl 3, ASYNC_LEAKY.makeImpl 1024]
 
 options = [
-        let update d conf = flip (setL exitSecDelay) conf <$> parseUnadornedInt d
-        in Option ['d'] ["delay"] (ReqArg update "seconds") "Delay in seconds before exiting",
-
         let update p conf = pure $ setL partPrefix p conf
         in Option ['p'] ["prefix"] (ReqArg update "prefix") "Filename prefix for the output part files",
 
@@ -119,4 +115,3 @@ main = do
                                 putStrLn $ show (e::E.IOException) 
                                 hFlush stdout
                 E.catch (runSelectedImpl conf) exioHandler
-                threadDelay $ (getL exitSecDelay conf)*(1000^2)

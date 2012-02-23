@@ -5,6 +5,7 @@ module Util.Iteratee (
        cappedIterHandle
     ) where
 
+import System.IO
 import qualified Data.Iteratee as I
 import qualified Data.ByteString as B
 

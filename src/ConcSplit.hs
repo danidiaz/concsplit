@@ -10,8 +10,6 @@ module ConcSplit (
        paths2allocators,
        infiniteParts,
        fromPreexistingHandle,
-       iterHandle,
-       cappedIterHandle,
        allocLeftToRight,
        allocRightToLeft
     ) where
@@ -20,15 +18,9 @@ import System.IO hiding (hGetContents,getContents,readFile,interact)
 import Data.List
 import Data.Lens.Common
 import Data.Lens.Template
-import qualified Data.Iteratee as I
-import qualified Data.ByteString as B
 import Control.Monad.CatchIO as CIO
 
 type Allocator a = IO (a,IO ())
-
-type BiAllocator a b = IO (a,IO (), b, IO ())
-
-type MkBi a b = Allocator a -> Allocator b -> BiAllocator a b
 
 data Impl = Impl
     {
@@ -61,11 +53,9 @@ infiniteParts prefix sizes =
 fromPreexistingHandle:: Handle -> Allocator Handle
 fromPreexistingHandle h = return (h,return ())
 
-iterHandle:: Handle -> I.Iteratee B.ByteString IO ()
-iterHandle = I.mapChunksM_ . B.hPut
+type BiAllocator a b = IO (a,IO (), b, IO ())
 
-cappedIterHandle:: Int -> Handle -> I.Iteratee B.ByteString IO ()
-cappedIterHandle n = I.joinI . I.take n . iterHandle
+type MkBi a b = Allocator a -> Allocator b -> BiAllocator a b
 
 allocLeftToRight::MkBi a b
 allocLeftToRight a1 a2 =

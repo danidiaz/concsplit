@@ -16,6 +16,7 @@ import qualified Data.List as L
 import qualified Data.Iteratee as I
 import Data.Iteratee.IO.Handle
 import Data.Iteratee ((><>),(<><))
+import Util.Iteratee
 
 makeImpl :: Int -> Impl
 makeImpl chunkSize = 

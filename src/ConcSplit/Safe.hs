@@ -32,6 +32,10 @@ concsplit_impl chunkSize files2join parts =
 
         writeToIter handle iter = enumHandle chunkSize handle iter 
 
+        fuse iter iterAllocs = 
+            let fuse' (iter',release) = pure (iter >> iter',release)
+            in (head iterAllocs >>= fuse') : tail iterAllocs
+
         gomasked:: (forall a. IO a -> IO a) -> 
              AllocStrategy Handle ByteIter ->
              [Allocator ByteIter] -> -- this list is assumed to be infinite
@@ -44,9 +48,9 @@ concsplit_impl chunkSize files2join parts =
                     iter' <- onException (onException (restore $ writeToIter handle iter) releaseIter) releaseHandle       
                     atEOF <- hIsEOF handle
                     if atEOF
-                        then do onException releaseHandle releaseIter
+                        then do releaseHandle `onException` releaseIter
                                 go allocRightToLeft (pure (iter',releaseIter):tail destinations) sources 
-                        else do onException releaseIter releaseHandle
-                                go allocLeftToRight (tail destinations) (pure (handle,releaseHandle):sources)
+                        else do releaseIter `onException` releaseHandle
+                                go allocLeftToRight (fuse iter' $ tail destinations) (pure (handle,releaseHandle):sources)
             in go allocStrategy destinations sources
     in mask $ \restore -> gomasked restore allocLeftToRight (map mkIter parts) files2join 

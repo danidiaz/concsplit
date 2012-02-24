@@ -6,8 +6,7 @@ import System.IO
 import qualified Data.ByteString as B
 import Control.Monad
 import Control.Applicative
-import Control.Monad.CatchIO as CIO
-import Control.Monad.IO.Class
+import Control.Exception
 import ConcSplit
 import Control.Concurrent
 import Data.List
@@ -39,11 +38,11 @@ concsplit_impl chunkSize files2join parts =
         go allocStrategy destinations [] = head destinations >>= snd 
         go allocStrategy destinations (source:sources) = do 
             (handle,releaseHandle,iter,releaseIter) <- allocStrategy source (head destinations) 
-            iter' <- CIO.onException (CIO.onException (writeToIter handle iter) releaseIter) releaseHandle       
+            iter' <- onException (onException (writeToIter handle iter) releaseIter) releaseHandle       
             atEOF <- hIsEOF handle
             if atEOF
-                then do CIO.onException releaseHandle releaseIter
+                then do releaseHandle `onException`  releaseIter
                         go allocRightToLeft (pure (iter',releaseIter):tail destinations) sources 
-                else do CIO.onException releaseIter releaseHandle
+                else do releaseIter `onException` releaseHandle
                         go allocLeftToRight (tail destinations) (pure (handle,releaseHandle):sources)
     in go allocLeftToRight (map mkIter parts) files2join 

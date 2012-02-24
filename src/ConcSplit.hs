@@ -2,8 +2,7 @@
 
 module ConcSplit (
        Allocator,
-       BiAllocator,
-       MkBi,
+       AllocStrategy,
        Impl (..),
        suggestedName,
        concsplit,
@@ -55,14 +54,14 @@ fromPreexistingHandle h = return (h,return ())
 
 type BiAllocator a b = IO (a,IO (), b, IO ())
 
-type MkBi a b = Allocator a -> Allocator b -> BiAllocator a b
+type AllocStrategy a b = Allocator a -> Allocator b -> BiAllocator a b
 
-allocLeftToRight::MkBi a b
+allocLeftToRight::AllocStrategy a b
 allocLeftToRight a1 a2 =
     CIO.bracketOnError a1
                        snd
                        (\(handle,release) -> a2 >>= \(handle2,release2) -> return (handle,release,handle2,release2))
 
-allocRightToLeft::MkBi a b
+allocRightToLeft::AllocStrategy a b
 allocRightToLeft a1 a2 = allocLeftToRight a2 a1 >>= \(x,xCleanup,y,yCleanup) -> return (y,yCleanup,x,xCleanup)
 

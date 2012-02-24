@@ -35,18 +35,13 @@ concEnum chunkSize files2join splitty= do
              resultIter <- CIO.bracket h
                                        snd
                                        (\(handle,release) -> enumHandle chunkSize handle ioiter)
---           resultIter <- CIO.bracket (liftIO h)
---                                     (liftIO . snd)
---                                     (\(handle,release) -> enumHandle chunkSize handle ioiter)
              concEnum' hs resultIter
     concEnum' files2join splitty
 
-splitterIter::[(Allocator Handle,Int)] -> I.Iteratee B.ByteString IO ()
+splitterIter::[(Allocator Handle,Int)] -> ByteIter
 splitterIter [] = return ()
 splitterIter ((allocator,size):xs) = do
     (handle,release) <- liftIO allocator
-    --liftIO $ putStrLn $ show size
-    --liftIO $ threadDelay (1*1000^2)
     cappedIterHandle size handle
     liftIO release
     splitterIter xs

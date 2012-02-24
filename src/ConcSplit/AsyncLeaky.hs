@@ -26,15 +26,16 @@ makeImpl chunkSize =
         desc = "async-leaky impl using iterators (enumerator chunk size of " ++ prettySize ++ ")"
     in Impl name (concsplit_impl chunkSize) desc
 
-type MkBi' = MkBi Handle (I.Iteratee B.ByteString IO ())
-
 concsplit_impl:: Int -> [Allocator Handle] -> [(Allocator Handle,Int)] -> IO ()
 concsplit_impl chunkSize files2join parts = 
     let mkIter (allocator,size) = allocator >>= \(handle,cleanup) -> return (cappedIterHandle size handle,cleanup) 
 
         writeToIter handle iter = enumHandle chunkSize handle iter 
 
-        go:: MkBi' -> [Allocator (I.Iteratee B.ByteString IO ())] -> [Allocator Handle] -> IO () 
+        go:: AllocStrategy Handle ByteIter -> 
+             [Allocator ByteIter] -> 
+             [Allocator Handle] -> 
+             IO () 
         go allocStrategy destinations [] = head destinations >>= snd 
         go allocStrategy destinations (source:sources) = do 
             (handle,releaseHandle,iter,releaseIter) <- allocStrategy source (head destinations) 

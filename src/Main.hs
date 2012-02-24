@@ -59,12 +59,12 @@ options = [
         in Option ['p'] ["prefix"] (ReqArg update "prefix") "Filename prefix for the output part files",
 
         let update s conf = (\p -> modL partSizes ((:) p) conf) <$> parseSize s
-        in Option ['s'] ["size"] (ReqArg update "size") "Output part file size",
+        in Option ['s'] ["size"] (ReqArg update "size") "Output part file size\n(can be expressed in the following units: b,K,M,G)",
 
         let update m conf = case M.lookup m implMap of 
                 Nothing -> throwError $ "Implementation \"" ++ m ++ "\" not found" 
                 Just i -> pure $ setL impl i conf
-        in Option ['m'] ["method"] (ReqArg update "method") "Method to employ",
+        in Option ['m'] ["method"] (ReqArg update "method") $ "Method to employ\n(default: "++ getL (impl C.>>> suggestedName) def ++")",
 
         let update = \conf -> pure $ setL listMethods True conf 
         in Option ['l'] ["list"] (NoArg update) "List available methods",
@@ -83,9 +83,17 @@ validate conf
     | otherwise = pure conf
 
 printUsage::IO ()
-printUsage =
+printUsage = do
     let header = "concsplit [OPTIONS] [FILE...]" 
-    in putStr $ usageInfo header options
+        examples = [ "concsplit input1.txt -s 1M -m safe1K",
+                     "concsplit input1.txt input2.txt -p output -s 7b -s 1K -s 3M1K3b",
+                     "concsplit -p fromstdin -s 1K",
+                     "concsplit -l",
+                     "concsplit -h"
+                   ]
+    putStr $ usageInfo header options
+    putStrLn "Examples:" 
+    mapM_ putStrLn . map ((++) "\t") $ examples
 
 runSelectedImpl :: Conf -> IO ()
 runSelectedImpl conf = do

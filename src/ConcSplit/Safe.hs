@@ -40,11 +40,10 @@ concsplit_impl chunkSize files2join partSize parts =
             in (head iterAllocs >>= fuse') : tail iterAllocs
 
         gomasked:: (forall a. IO a -> IO a) -> 
-             AllocStrategy Handle ByteIter ->
              [Allocator ByteIter] -> -- this list is assumed to be infinite
              [Allocator Handle] -> 
              IO () 
-        gomasked restore allocStrategy destinations sources = 
+        gomasked restore destinations sources = 
             let go _ destinations [] = head destinations >>= snd 
                 go allocStrategy destinations (source:sources) = do 
                     (handle,releaseHandle,iter,releaseIter) <- allocStrategy source (head destinations) 
@@ -55,5 +54,5 @@ concsplit_impl chunkSize files2join partSize parts =
                                 go allocRightToLeft (pure (iter',releaseIter):tail destinations) sources 
                         else do releaseIter `onException` releaseHandle
                                 go allocLeftToRight (fuse iter' $ tail destinations) (pure (handle,releaseHandle):sources)
-            in go allocStrategy destinations sources
-    in mask $ \restore -> gomasked restore allocLeftToRight (map mkIter parts) files2join 
+            in go allocLeftToRight destinations sources
+    in mask $ \restore -> gomasked restore (map mkIter parts) files2join 

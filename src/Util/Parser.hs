@@ -11,7 +11,6 @@ import System.IO
 import qualified Data.ByteString as B
 import Control.Monad
 import Control.Applicative
-import Control.Monad.CatchIO as CIO
 import Control.Monad.IO.Class
 import Control.Monad.Error
 import Control.Monad.Error.Class

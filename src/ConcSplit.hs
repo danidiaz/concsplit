@@ -17,7 +17,7 @@ import System.IO hiding (hGetContents,getContents,readFile,interact)
 import Data.List
 import Data.Lens.Common
 import Data.Lens.Template
-import Control.Monad.CatchIO as CIO
+import Control.Exception
 
 type Allocator a = IO (a,IO ())
 
@@ -57,9 +57,9 @@ type AllocStrategy a b = Allocator a -> Allocator b -> BiAllocator a b
 
 allocLeftToRight::AllocStrategy a b
 allocLeftToRight a1 a2 =
-    CIO.bracketOnError a1
-                       snd
-                       (\(handle,release) -> a2 >>= \(handle2,release2) -> return (handle,release,handle2,release2))
+    bracketOnError a1
+                   snd
+                   (\(handle,release) -> a2 >>= \(handle2,release2) -> return (handle,release,handle2,release2))
 
 allocRightToLeft::AllocStrategy a b
 allocRightToLeft a1 a2 = allocLeftToRight a2 a1 >>= \(x,xCleanup,y,yCleanup) -> return (y,yCleanup,x,xCleanup)

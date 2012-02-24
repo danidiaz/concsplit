@@ -23,7 +23,7 @@ makeImpl chunkSize =
     let 
         prettySize = prettyPrintSize chunkSize
         name = "async-leaky" ++ prettySize
-        desc = "async-leaky impl using iterators (enumerator chunk size of " ++ prettySize ++ ")"
+        desc = "less naive, iteratee-based, still vulnerable to asynchronous exceptions (enumerator chunk size of " ++ prettySize ++ ")"
     in Impl name (concsplit_impl chunkSize) desc
 
 concsplit_impl:: Int -> [Allocator Handle] -> [(Allocator Handle,Int)] -> IO ()
@@ -33,7 +33,7 @@ concsplit_impl chunkSize files2join parts =
         writeToIter handle iter = enumHandle chunkSize handle iter 
 
         go:: AllocStrategy Handle ByteIter -> 
-             [Allocator ByteIter] -> 
+             [Allocator ByteIter] -> -- this list is assumed to be infinite
              [Allocator Handle] -> 
              IO () 
         go allocStrategy destinations [] = head destinations >>= snd 

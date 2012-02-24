@@ -23,13 +23,13 @@ makeImpl chunkSize =
     let 
         prettySize = prettyPrintSize chunkSize
         name = "leaky" ++ prettySize
-        desc = "leaky impl using iterators (enumerator chunk size of " ++ prettySize ++ ")"
+        desc = "naive, iteratee-based, doesnt quite work (enumerator chunk size of " ++ prettySize ++ ")"
         concsplit_impl files parts = concEnum chunkSize files (splitterIter parts) >> pure () 
     in Impl name concsplit_impl desc
 
-concEnum:: Int -> [Allocator Handle] -> I.Enumerator B.ByteString IO a 
+concEnum:: Int -> [Allocator Handle] -> ByteEnum a
 concEnum chunkSize files2join splitty= do
-    let concEnum' ::[Allocator Handle] -> I.Enumerator B.ByteString IO a 
+    let concEnum' ::[Allocator Handle] -> ByteEnum a
         concEnum' [] ioiter = pure ioiter
         concEnum' (h:hs) ioiter = do
              resultIter <- CIO.bracket h

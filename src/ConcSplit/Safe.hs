@@ -23,7 +23,7 @@ makeImpl chunkSize =
     let 
         prettySize = prettyPrintSize chunkSize
         name = "safe" ++ prettySize
-        desc = "safe impl using iterators (enumerator chunk size of " ++ prettySize ++ ")"
+        desc = "iteratee-based, should work in all cases or so I hope (enumerator chunk size of " ++ prettySize ++ ")"
     in Impl name (concsplit_impl chunkSize) desc
 
 concsplit_impl:: Int -> [Allocator Handle] -> [(Allocator Handle,Int)] -> IO ()
@@ -34,7 +34,7 @@ concsplit_impl chunkSize files2join parts =
 
         gomasked:: (forall a. IO a -> IO a) -> 
              AllocStrategy Handle ByteIter ->
-             [Allocator ByteIter] -> 
+             [Allocator ByteIter] -> -- this list is assumed to be infinite
              [Allocator Handle] -> 
              IO () 
         gomasked restore allocStrategy destinations sources = 

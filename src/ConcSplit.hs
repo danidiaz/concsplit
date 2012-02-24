@@ -24,7 +24,7 @@ type Allocator a = IO (a,IO ())
 data Impl = Impl
     {
         _suggestedName :: String,
-        _concsplit :: [Allocator Handle] -> [(Allocator Handle,Int)] -> IO (),
+        _concsplit :: [Allocator Handle] -> Int -> [Allocator Handle] -> IO (),
         _desc :: String
     }
 
@@ -43,11 +43,10 @@ paths2allocators iomode =
             return (handle, putStrLn closeMsg >> hClose handle)   
     in map path2allocator
 
-infiniteParts:: FilePath -> [Int] -> [(Allocator Handle,Int)]
-infiniteParts prefix sizes =
-    let infiniteSizes = init sizes ++ (repeat $ last sizes)
-        infiniteNames = map (\n -> prefix ++ show n) [1..]
-    in zip (paths2allocators WriteMode infiniteNames) infiniteSizes 
+infiniteParts:: String -> [Allocator Handle]
+infiniteParts prefix =
+    let infiniteNames = map (\n -> prefix ++ show n) [1..]
+    in paths2allocators WriteMode infiniteNames
 
 fromPreexistingHandle:: Handle -> Allocator Handle
 fromPreexistingHandle h = return (h,return ())

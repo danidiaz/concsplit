@@ -6,6 +6,7 @@ module ConcSplit.Safe (
 import System.IO
 import qualified Data.ByteString as B
 import Control.Monad
+import Control.Monad.IO.Class
 import Control.Applicative
 import Control.Exception
 import ConcSplit
@@ -23,14 +24,16 @@ makeImpl chunkSize =
     let 
         prettySize = prettyPrintSize chunkSize
         name = "safe" ++ prettySize
-        desc = "iteratee-based, should work in all cases or so I hope (enumerator chunk size of " ++ prettySize ++ ")"
+        desc = "iteratee-based, should work in all cases (preferred chunk size of " ++ prettySize ++ ")"
     in Impl name (concsplit_impl chunkSize) desc
 
-concsplit_impl:: Int -> [Allocator Handle] -> [(Allocator Handle,Int)] -> IO ()
-concsplit_impl chunkSize files2join parts = 
-    let mkIter (allocator,size) = allocator >>= \(handle,cleanup) -> return (cappedIterHandle size handle,cleanup) 
+concsplit_impl:: Int -> [Allocator Handle] -> Int -> [Allocator Handle] -> IO ()
+concsplit_impl chunkSize files2join partSize parts = 
+    let mkIter allocator = allocator >>= \(handle,cleanup) -> return (cappedIterHandle partSize handle,cleanup) 
 
-        writeToIter handle iter = enumHandle chunkSize handle iter 
+        chunkSize' = min chunkSize partSize 
+
+        writeToIter handle iter = enumHandle chunkSize' handle iter 
 
         fuse iter iterAllocs = 
             let fuse' (iter',release) = pure (iter >> iter',release)

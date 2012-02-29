@@ -19,6 +19,7 @@ import Data.Lens.Common
 import Data.Lens.Template
 import Control.Exception
 
+
 type Allocator a = IO (a,IO ())
 
 data Impl = Impl

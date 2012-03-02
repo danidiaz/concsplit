@@ -37,7 +37,7 @@ concsplit_impl chunkSize files2join partSize parts =
 
         fuse iter iterAllocs = (first ((>>) iter) <$> head iterAllocs) : tail iterAllocs
 
-        gomasked:: (forall a. IO a -> IO a) -> 
+        gomasked:: (forall a. IO a -> IO a) -> -- restore function to run computations unmasked
                    [Allocator ByteIter] -> -- this list is assumed to be infinite
                    [Allocator Handle] -> 
                    IO () 

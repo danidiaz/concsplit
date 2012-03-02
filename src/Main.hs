@@ -25,6 +25,7 @@ import qualified Data.Text as T
 import Data.Text.Read
 
 import Util.Parser
+import Util.Allocator
 import ConcSplit
 import qualified ConcSplit.Leaky as LEAKY
 import qualified ConcSplit.Safe as SAFE

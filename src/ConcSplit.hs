@@ -2,15 +2,12 @@
 
 module ConcSplit (
        Allocator,
-       AllocStrategy,
        Impl (..),
        suggestedName,
        concsplit,
        paths2allocators,
        infiniteParts,
-       fromPreexistingHandle,
-       allocLeftToRight,
-       allocRightToLeft
+       fromPreexistingHandle
     ) where
 
 import System.IO hiding (hGetContents,getContents,readFile,interact)
@@ -18,9 +15,7 @@ import Data.List
 import Data.Lens.Common
 import Data.Lens.Template
 import Control.Exception
-
-
-type Allocator a = IO (a,IO ())
+import Util.Allocator
 
 data Impl = Impl
     {
@@ -51,17 +46,4 @@ infiniteParts prefix =
 
 fromPreexistingHandle:: Handle -> Allocator Handle
 fromPreexistingHandle h = return (h,return ())
-
-type BiAllocator a b = IO (a,IO (), b, IO ())
-
-type AllocStrategy a b = Allocator a -> Allocator b -> BiAllocator a b
-
-allocLeftToRight::AllocStrategy a b
-allocLeftToRight a1 a2 =
-    bracketOnError a1
-                   snd
-                   (\(handle,release) -> a2 >>= \(handle2,release2) -> return (handle,release,handle2,release2))
-
-allocRightToLeft::AllocStrategy a b
-allocRightToLeft a1 a2 = allocLeftToRight a2 a1 >>= \(x,xCleanup,y,yCleanup) -> return (y,yCleanup,x,xCleanup)
 

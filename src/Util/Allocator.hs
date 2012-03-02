@@ -28,5 +28,7 @@ combine f a1 a2 = do
    closeNow `onException` closeLater
    return (r,closeLater) 
 
+-- Lets you play with the order of allocation. 
+-- Here, the second allocator parameter is allocated *first*.
 combine_flipped f = flip . combine $ (fmap (fmap (fmap (second flip)))) (flip f)
 

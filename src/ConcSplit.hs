@@ -10,7 +10,7 @@ module ConcSplit (
        fromPreexistingHandle
     ) where
 
-import System.IO hiding (hGetContents,getContents,readFile,interact)
+import System.IO
 import Data.List
 import Data.Lens.Common
 import Data.Lens.Template

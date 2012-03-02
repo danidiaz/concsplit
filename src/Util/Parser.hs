@@ -7,20 +7,14 @@ module Util.Parser (
         prettyPrintSize
     ) where
 
-import System.IO
-import qualified Data.ByteString as B
 import Control.Monad
 import Control.Applicative
 import Control.Monad.IO.Class
 import Control.Monad.Error
 import Control.Monad.Error.Class
-import Control.Concurrent
 import Data.List
 import qualified Data.List as L
 import qualified Data.Map as M
-import qualified Data.Iteratee as I
-import Data.Iteratee.IO.Handle
-import Data.Iteratee ((><>),(<><))
 import qualified Data.Text as T
 import Data.Text.Read
 

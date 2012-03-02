@@ -3,21 +3,17 @@ module ConcSplit.Leaky (
     ) where 
 
 import System.IO
-import qualified Data.ByteString as B
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Applicative
 import Control.Exception
-import ConcSplit
 import Control.Concurrent
 import Data.List
-import Util.Parser
-import qualified Data.List as L
-import qualified Data.Iteratee as I
 import Data.Iteratee.IO.Handle
-import Data.Iteratee ((><>),(<><))
 import Util.Iteratee
 import Util.Allocator
+import Util.Parser
+import ConcSplit
 
 makeImpl :: Int -> Impl
 makeImpl chunkSize = 

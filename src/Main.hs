@@ -2,9 +2,8 @@
 
 module Main where
 
-import Prelude hiding (readFile)
-import System.IO hiding (hGetContents,getContents,readFile,interact)
---import System.IO.Error
+import Prelude hiding (catch,(.))
+import System.IO
 import System.Environment
 import System.Console.GetOpt
 import Data.Char
@@ -13,16 +12,11 @@ import Data.List
 import Data.Lens.Common
 import Data.Lens.Template
 import Data.Default
-import Debug.Trace
-import Control.Concurrent
-import qualified Control.Category as C
+import Control.Category
 import Control.Monad
 import Control.Monad.Error
 import Control.Applicative
 import Control.Exception
-import qualified Control.Exception as E
-import qualified Data.Text as T
-import Data.Text.Read
 
 import Util.Parser
 import Util.Allocator
@@ -64,7 +58,7 @@ options = [
         let update m conf = case M.lookup m implMap of 
                 Nothing -> throwError $ "Implementation \"" ++ m ++ "\" not found" 
                 Just i -> pure $ setL impl i conf
-        in Option ['m'] ["method"] (ReqArg update "method") $ "Method to employ\n(default: "++ getL (impl C.>>> suggestedName) def ++")",
+        in Option ['m'] ["method"] (ReqArg update "method") $ "Method to employ\n(default: "++ getL (impl >>> suggestedName) def ++")",
 
         let update = \conf -> pure $ setL listMethods True conf 
         in Option ['l'] ["list"] (NoArg update) "List available methods",
@@ -93,7 +87,7 @@ runSelectedImpl conf = do
         inputs
             |null files = [fromPreexistingHandle stdin]
             |otherwise = paths2allocators ReadMode files
-    getL (impl C.>>> concsplit) conf inputs (getL partSizes conf) parts
+    getL (impl >>> concsplit) conf inputs (getL partSizes conf) parts
 
 main :: IO ()
 main = do 
@@ -115,6 +109,6 @@ main = do
                 let exioHandler =
                         \e -> do
                                 putStrLn "An IO exception happened!" 
-                                putStrLn $ show (e::E.IOException) 
+                                putStrLn $ show (e::IOException) 
                                 hFlush stdout
-                E.catch (runSelectedImpl conf) exioHandler
+                catch (runSelectedImpl conf) exioHandler

@@ -8,8 +8,6 @@ module Util.Allocator (
 
 import Control.Arrow (first,second)
 import Control.Exception
-import qualified Data.Iteratee as I
-import qualified Data.ByteString as B
 
 type Release = IO ()
 

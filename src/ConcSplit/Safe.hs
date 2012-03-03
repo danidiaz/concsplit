@@ -28,6 +28,7 @@ concsplit_impl chunkSize files2join partSize parts =
     let mkIter :: Allocator Handle -> Allocator ByteIter 
         mkIter = fmap (first (cappedIterHandle partSize))
 
+        -- We need this to ensure that leftover input in the last iteratee doesn't overflow the last file.
         chunkSize' = min chunkSize partSize 
 
         -- Prepends a ByteIter (possibly containing leftover input) to

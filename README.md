@@ -2,7 +2,7 @@ This program concatenates a sequence of input files and then splits their conten
 
 It should be done in a single pass, ensuring that file handles are closed the moment they are no longer needed, and in an exception-safe manner (that is, all opened file handles must be properly closed in the event of an exception). 
 
-The program uses iteratees. I guess it would be simpler to implement using [conduits](http://hackage.haskell.org/package/conduit), [pipes](http://hackage.haskell.org/package/pipes) or [regions](http://hackage.haskell.org/package/safer-file-handles), but I wanted to cement my knowledge of iteratees first. 
+The program uses [iteratees](http://hackage.haskell.org/package/iteratee). I guess it would be simpler to implement using [conduits](http://hackage.haskell.org/package/conduit), [pipes](http://hackage.haskell.org/package/pipes) or [regions](http://hackage.haskell.org/package/safer-file-handles), but I wanted to cement my knowledge of iteratees first. 
 
 Some examples of use:
 
